@@ -51,6 +51,15 @@ BAR_START = TILE_STAGGER * COLS * ROWS + 0.4
 BAR_STAGGER = 0.06
 BAR_DUR = 0.6
 
+# looping: everything plays in, holds, fades out together, sits blank for a
+# beat, then replays. The blank gap must cover the longest stagger (~3.3s) so
+# every element is hidden before the first tile slides in again.
+CYCLE = 13.0
+HOLD_END, FADE_END = 8.85, 9.35
+pc = lambda t: f"{t / CYCLE * 100:.2f}%"
+kt = lambda t: f"{max(0.0, min(1.0, t / CYCLE)):.4f}"
+LOOP = f'dur="{CYCLE}s" repeatCount="indefinite"'
+
 
 def short(d):
     return datetime.date.fromisoformat(d).strftime("%b %-d")
@@ -83,10 +92,13 @@ parts = [
     f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" '
     f'font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">',
     '<style>'
-    f'.t{{opacity:0;animation:in {SLIDE_DUR}s ease-out both}}'
-    '@keyframes in{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:translateY(0)}}'
-    f'.b{{transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);animation:grow {BAR_DUR}s ease-out both}}'
-    '@keyframes grow{to{transform:scaleY(1)}}'
+    f'.t{{opacity:0;animation:in {CYCLE}s ease-out infinite both}}'
+    f'@keyframes in{{0%{{opacity:0;transform:translateY(14px)}}{pc(SLIDE_DUR)}{{opacity:1;transform:translateY(0)}}'
+    f'{pc(HOLD_END)}{{opacity:1;transform:translateY(0)}}{pc(FADE_END)}{{opacity:0;transform:translateY(-8px)}}'
+    f'100%{{opacity:0;transform:translateY(14px)}}}}'
+    f'.b{{transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);animation:grow {CYCLE}s ease-out infinite both}}'
+    f'@keyframes grow{{0%{{transform:scaleY(0)}}{pc(BAR_DUR)}{{transform:scaleY(1)}}{pc(HOLD_END)}{{transform:scaleY(1)}}'
+    f'{pc(FADE_END)}{{transform:scaleY(0)}}100%{{transform:scaleY(0)}}}}'
     '@media (prefers-reduced-motion: reduce){.t,.b{opacity:1!important;transform:none!important;animation:none!important}}'
     '</style>',
     f'<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">'
@@ -120,9 +132,12 @@ for i, (label, value, suffix, caption, accent) in enumerate(tiles):
         v = value * (1 - (1 - p) ** 3)
         t_on = count_start + COUNT_DUR * (k - 1) / FRAMES
         t_off = count_start + COUNT_DUR * k / FRAMES
-        anim = f'<set attributeName="opacity" to="1" begin="{t_on:.3f}s"/>'
         if k < FRAMES:
-            anim += f'<set attributeName="opacity" to="0" begin="{t_off:.3f}s"/>'
+            anim = (f'<animate attributeName="opacity" values="0;1;0" keyTimes="0;{kt(t_on)};{kt(t_off)}" '
+                    f'calcMode="discrete" {LOOP}/>')
+        else:   # final value stays up until the tile fades out
+            anim = (f'<animate attributeName="opacity" values="0;1" keyTimes="0;{kt(t_on)}" '
+                    f'calcMode="discrete" {LOOP}/>')
         parts.append(
             f'<text x="{x+24:.1f}" y="{num_y}" opacity="0" font-size="54" font-weight="700" fill="{accent}">'
             f'{fmt(v, value)}<tspan font-size="24" font-weight="400" fill="{MUTED}">{suffix}</tspan>'

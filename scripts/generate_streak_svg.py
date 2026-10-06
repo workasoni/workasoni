@@ -46,6 +46,21 @@ H = TOP + 7*(CELL+GAP) + 22
 
 # timing (seconds)
 REVEAL, DUR = 3.6, 0.55
+# looping: cells pop in on a diagonal wave, hold, fade out on the same wave,
+# then the grid sits blank for a beat before the next wave. The blank gap must
+# be >= REVEAL so every cell is hidden before the first one pops again.
+CYCLE = 12.0
+HOLD_END, FADE_END = 7.6, 8.2
+pc = lambda t: f"{t / CYCLE * 100:.2f}%"
+KF = (
+    "@keyframes pop {"
+    f"0%{{opacity:0;transform:scale(.2)}} {pc(DUR*0.6)}{{opacity:1;transform:scale(1.1)}} "
+    f"{pc(DUR)}{{opacity:1;transform:scale(1)}} {pc(HOLD_END)}{{opacity:1;transform:scale(1)}} "
+    f"{pc(FADE_END)}{{opacity:0;transform:scale(.6)}} 100%{{opacity:0;transform:scale(.2)}} }}"
+    "@keyframes flash {"
+    f"0%{{filter:brightness(2.4)}} {pc((DUR+0.15)*0.45)}{{filter:brightness(2.4)}} "
+    f"{pc(DUR+0.15)}{{filter:brightness(1)}} 100%{{filter:brightness(1)}} }}"
+)
 maxorder = (NW-1) + 6*0.55
 
 rects, labels = [], []
@@ -73,10 +88,9 @@ svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewB
 <style>
   text.lbl {{ fill:{GRAY}; font-size:13px; font-weight:600; }}
   text.total {{ fill:#8b949e; font-size:15px; font-weight:700; }}
-  .c {{ transform-box:fill-box; transform-origin:center; opacity:0; animation:pop {DUR}s ease-out both; }}
-  .g {{ animation:pop {DUR}s ease-out both, flash {DUR+0.15}s ease-out both; }}
-  @keyframes pop {{ 0%{{opacity:0;transform:scale(.2)}} 60%{{opacity:1;transform:scale(1.1)}} 100%{{opacity:1;transform:scale(1)}} }}
-  @keyframes flash {{ 0%{{filter:brightness(2.4)}} 45%{{filter:brightness(2.4)}} 100%{{filter:brightness(1)}} }}
+  .c {{ transform-box:fill-box; transform-origin:center; opacity:0; animation:pop {CYCLE}s ease-out infinite both; }}
+  .g {{ animation:pop {CYCLE}s ease-out infinite both, flash {CYCLE}s ease-out infinite both; }}
+  {KF}
   @media (prefers-reduced-motion: reduce) {{ .c {{ opacity:1 !important; animation:none !important; }} }}
 </style>
 <rect width="{W}" height="{H}" fill="none"/>

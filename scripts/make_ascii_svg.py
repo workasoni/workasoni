@@ -55,9 +55,20 @@ TITLE_TEXT = "#7d8590"
 INK = "#c9d1d9"      # the single ascii color (matches Andrew6rant)
 CURSOR = "#c9d1d9"
 
-# ---- reveal timing (one-shot; a cursor rasters top -> bottom) -------------
-ROW_DUR = 5.8 / ROWS  # whole portrait prints in ~6s at any resolution
-STAGGER = ROW_DUR       # == ROW_DUR -> a single cursor sweeping down
+# ---- reveal timing (looping; a cursor rasters top -> bottom) --------------
+# one shared CYCLE: print (~5.8s) -> hold -> fade out -> blank -> reprint.
+# looping matters on GitHub: a one-shot animation finishes the moment the
+# image loads, so anyone who scrolls to it later only ever sees a still frame.
+PRINT = 5.8           # whole portrait prints in ~6s at any resolution
+ROW_DUR = PRINT / ROWS
+STAGGER = ROW_DUR     # == ROW_DUR -> a single cursor sweeping down
+CYCLE = float(os.environ.get("CYCLE", 14))
+FADE_AT, FADE_END = CYCLE - 1.4, CYCLE - 0.6   # whole portrait fades, then reprints
+
+
+def kt(t):
+    """seconds -> keyTime fraction of the cycle"""
+    return f"{max(0.0, min(1.0, t / CYCLE)):.4f}"
 
 # ---- 1. sample the image into a COLS x ROWS grayscale grid ----------------
 im = Image.open(SRC).convert("L")               # grayscale
@@ -110,6 +121,10 @@ parts.append(f'<text x="{CANVAS_W/2}" y="{TITLEBAR_H/2 + 4}" fill="{TITLE_TEXT}"
 
 # one <text> per row (single color -> no per-char markup, tiny file)
 font_size = CELL_H * 0.86
+loop = f'dur="{CYCLE}s" repeatCount="indefinite"'
+if not STATIC:
+    parts.append(f'<g><animate attributeName="opacity" values="1;1;0;0" '
+                 f'keyTimes="0;{kt(FADE_AT)};{kt(FADE_END)};1" {loop}/>')
 for ry, line in enumerate(rows_txt):
     y = art_top + ry * CELL_H + CELL_H * 0.74
     row_y = art_top + ry * CELL_H
@@ -122,19 +137,24 @@ for ry, line in enumerate(rows_txt):
         parts.append(text)
         continue
 
+    a, b = kt(delay), kt(delay + ROW_DUR)
+    # left-to-right wipe of this row, on the shared looping timeline
     parts.append(
         f'<clipPath id="r{ry}"><rect x="{PAD}" y="{row_y:.1f}" height="{CELL_H}" width="0">'
-        f'<animate attributeName="width" from="0" to="{ART_W}" begin="{delay:.3f}s" '
-        f'dur="{ROW_DUR:.2f}s" fill="freeze"/></rect></clipPath>'
+        f'<animate attributeName="width" values="0;0;{ART_W};{ART_W}" '
+        f'keyTimes="0;{a};{b};1" {loop}/></rect></clipPath>'
     )
     parts.append(f'<g clip-path="url(#r{ry})">{text}</g>')
+    # block cursor riding the wipe edge, visible only while this row prints
     parts.append(
         f'<rect y="{row_y+1:.1f}" width="{CELL_W}" height="{CELL_H-2}" fill="{CURSOR}" opacity="0">'
-        f'<animate attributeName="x" from="{PAD}" to="{PAD+ART_W}" begin="{delay:.3f}s" '
-        f'dur="{ROW_DUR:.2f}s" fill="freeze"/>'
-        f'<set attributeName="opacity" to="0.85" begin="{delay:.3f}s"/>'
-        f'<set attributeName="opacity" to="0" begin="{delay+ROW_DUR:.3f}s"/></rect>'
+        f'<animate attributeName="x" values="{PAD};{PAD};{PAD+ART_W};{PAD+ART_W}" '
+        f'keyTimes="0;{a};{b};1" {loop}/>'
+        f'<animate attributeName="opacity" values="0;0.85;0" keyTimes="0;{a};{b}" '
+        f'calcMode="discrete" {loop}/></rect>'
     )
+if not STATIC:
+    parts.append('</g>')
 
 # status bar with a steady blinking cursor
 status_line_y = TITLEBAR_H + ART_H + PAD * 0.35
