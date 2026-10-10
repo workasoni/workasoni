@@ -1,5 +1,11 @@
 <div align="center">
 
+<!-- new: animated sunrise hero (hero.svg) -->
+<img src="./hero.svg" width="860" alt="Akash Soni, youth worker in Calgary" />
+
+<br>
+<br>
+
 <!-- animated contribution graph: real data, boxes reveal cell by cell
      (regenerated daily by .github/workflows/update-profile-art.yml) -->
 
@@ -27,11 +33,25 @@
 <br>
 <br>
 
+<h3><code>akash@github ~ $ ./about.sh</code></h3>
+
+<img src="./about.svg" width="860" alt="What I do and what I am exploring" />
+
+<br>
+<br>
+
+<h3><code>akash@github ~ $ ./stack.sh</code></h3>
+
+<img src="./stack.svg" width="860" alt="React, Vite, motion, Three.js, ShaderGradient, Remotion, anime.js, Python, ffmpeg" />
+
+<br>
+<br>
+
 <h3><code>akash@github ~ $ ./links.sh</code></h3>
 
 <p><b>Youth Worker · Data Analyst · AI Builder</b></p>
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-akash--soni-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/akash-soni-905473b3/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-akash--soni-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/akashsoniyyc/)
 [![GitHub](https://img.shields.io/badge/GitHub-workasoni-0d1117?style=for-the-badge&logo=github&logoColor=white)](https://github.com/workasoni)
 <br>
 
